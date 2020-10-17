@@ -1,0 +1,525 @@
+<!-- Este demo é na maior parte baseado no exemplo "misc_controls_pointerlock" do three.js, mas também no "webgl_sprites", "webgl_postprocessing_outline" entre outros -->
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js - pointerlock controls</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<link type="text/css" rel="stylesheet" href="three.js/examples/main.css">
+		<style>
+			#blocker {
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				background-color: rgba(0,0,0,0.5);
+			}
+
+			#instructions {
+				width: 100%;
+				height: 100%;
+
+				display: -webkit-box;
+				display: -moz-box;
+				display: box;
+
+				-webkit-box-orient: horizontal;
+				-moz-box-orient: horizontal;
+				box-orient: horizontal;
+
+				-webkit-box-pack: center;
+				-moz-box-pack: center;
+				box-pack: center;
+
+				-webkit-box-align: center;
+				-moz-box-align: center;
+				box-align: center;
+
+				color: #ffffff;
+				text-align: center;
+				font-family: Arial;
+				font-size: 14px;
+				line-height: 24px;
+
+				cursor: pointer;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="blocker">
+
+			<div id="instructions">
+				<span style="font-size:36px">Click to play</span>
+				<br /><br />
+				Move: WASD<br/>
+				Jump: SPACE<br/>
+				Look: MOUSE
+			</div>
+
+		</div>
+		<video width="640" height="360" id="videoTeste" loop  playsinline style="display:none">
+			<source type="video/mp4" src="./video.mp4" />
+		</video>
+		<div id="workInfo" style="position: absolute; width: 100%; text-align: center;-ms-transform: translateY(-50%);transform: translateY(-50%);top: 50%;visibility: hidden;">
+			Nome:
+			<div id="workName"></div><br/>
+			Descrição:
+			<div id="workDesc"></div><br/>
+			<div id="workYoutube"></div>			
+		</div>
+
+		<script type="module">
+
+			import * as THREE from './three.js/build/three.module.js';
+
+			import { PointerLockControls } from './three.js/examples/jsm/controls/PointerLockControls.js';
+			import { GLTFLoader } from './three.js/examples/jsm/loaders/GLTFLoader.js';
+
+			import { EffectComposer } from './three.js/examples/jsm/postprocessing/EffectComposer.js';
+			import { RenderPass } from './three.js/examples/jsm/postprocessing/RenderPass.js';
+			import { ShaderPass } from './three.js/examples/jsm/postprocessing/ShaderPass.js';
+			import { OutlinePass } from './three.js/examples/jsm/postprocessing/OutlinePass.js';
+			import { FXAAShader } from './three.js/examples/jsm/shaders/FXAAShader.js';
+
+			const tImage = 0;
+			const tVideo = 1;
+
+            const artInfo = {name: 'Sem título', desc: '', youtube: '', workType: 0};
+			let camera, scene, renderer, controls;
+
+			const objects = [];
+
+			let raycaster;
+			let raycaster2;
+
+			let moveForward = false;
+			let moveBackward = false;
+			let moveLeft = false;
+			let moveRight = false;
+			let canJump = false;
+
+			let cameraOrtho, sceneOrtho;
+			let spriteC;
+			let composer, effectFXAA, outlinePass;
+			let selectedObjects = [];
+
+            let showInfo = true;
+            
+			// custom global variables
+			let video, videoImage, videoImageContext, videoTexture;
+
+			let prevTime = performance.now();
+			const velocity = new THREE.Vector3();
+			const direction = new THREE.Vector3();
+			const vertex = new THREE.Vector3();
+			const color = new THREE.Color();
+
+			var mouse = new THREE.Vector2(), INTERSECTED;
+			init();
+			animate();
+
+			function init() {
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				cameraOrtho = new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+				cameraOrtho.position.z = 10;
+
+				sceneOrtho = new THREE.Scene();
+				// parte de criação meio que de um 'HUD', uma outra cena ortogonal, separada da cena 3D, talvez útil pra
+				// mostrar informações na tela.
+				// Atualmente mostra um X no meio da tela pra indicar onde a camera está apontando, é só descomentar essa
+				// parte (e os callbacks) se quiser ver, como o contorno branco já é melhor pra isso, eu deixei desativado.
+
+				/*
+				const amount = 200;
+				const radius = 500;
+
+				const textureLoader = new THREE.TextureLoader();
+
+				textureLoader.load( "./crosshair00.png", createHUDSprites );
+				*/
+
+				camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.y = 10;
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xffffff );
+				scene.fog = new THREE.Fog( 0xffffff, 0, 750 );
+
+				const light = new THREE.HemisphereLight( 0xeeeeff, 0x777788, 0.75 );
+				light.position.set( 0.5, 1, 0.75 );
+				scene.add( light );
+
+				controls = new PointerLockControls( camera, document.body );
+
+				renderer = new THREE.WebGLRenderer( { antialias: true } );
+				renderer.shadowMap.enabled = true;
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				renderer.autoClear = false; 
+				document.body.appendChild( renderer.domElement );
+
+				// postprocessing
+
+				composer = new EffectComposer( renderer );
+
+				const renderPass = new RenderPass( scene, camera );
+				composer.addPass( renderPass );
+
+				outlinePass = new OutlinePass( new THREE.Vector2( window.innerWidth, window.innerHeight ), scene, camera );
+				composer.addPass( outlinePass );
+
+				effectFXAA = new ShaderPass( FXAAShader );
+				effectFXAA.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+				composer.addPass( effectFXAA );
+
+				const blocker = document.getElementById( 'blocker' );
+				const instructions = document.getElementById( 'instructions' );
+
+				instructions.addEventListener( 'click', function () {
+
+					controls.lock();
+
+				}, false );
+
+				controls.addEventListener( 'lock', function () {
+
+					instructions.style.display = 'none';
+					blocker.style.display = 'none';
+
+				} );
+
+				controls.addEventListener( 'unlock', function () {
+
+					blocker.style.display = 'block';
+					instructions.style.display = '';
+
+				} );
+
+				scene.add( controls.getObject() );
+
+				const onKeyDown = function ( event ) {
+
+					switch ( event.keyCode ) {
+
+						case 38: // up
+						case 87: // w
+							moveForward = true;
+							break;
+
+						case 37: // left
+						case 65: // a
+							moveLeft = true;
+							break;
+
+						case 40: // down
+						case 83: // s
+							moveBackward = true;
+							break;
+
+						case 39: // right
+						case 68: // d
+							moveRight = true;
+							break;
+
+						case 32: // space
+							if ( canJump === true ) velocity.y += 350;
+							canJump = false;
+							break;
+
+					}
+
+				};
+
+				const onKeyUp = function ( event ) {
+
+					switch ( event.keyCode ) {
+
+						case 38: // up
+						case 87: // w
+							moveForward = false;
+							break;
+
+						case 37: // left
+						case 65: // a
+							moveLeft = false;
+							break;
+
+						case 40: // down
+						case 83: // s
+							moveBackward = false;
+							break;
+
+						case 39: // right
+						case 68: // d
+							moveRight = false;
+							break;
+
+					}
+
+				};
+
+				document.addEventListener( 'keydown', onKeyDown, false );
+				document.addEventListener( 'keyup', onKeyUp, false );
+
+				raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+                raycaster2 = new THREE.Raycaster();
+                
+				// floor
+				let floorGeometry = new THREE.PlaneBufferGeometry( 2000, 2000, 50, 50);
+				floorGeometry.rotateX( - Math.PI / 2 );
+
+                let floorTexture = new THREE.TextureLoader().load( './piso.jpg' );
+                floorTexture.wrapS = floorTexture.wrapT = THREE.RepeatWrapping;
+                floorTexture.center.set(.5, .5);
+                floorTexture.rotation = THREE.MathUtils.degToRad(-90);
+                floorTexture.flipY = false;
+                floorTexture.repeat.set(200, 200);
+                const floorMaterial = new THREE.MeshBasicMaterial({ map: floorTexture } );
+
+				const floor = new THREE.Mesh( floorGeometry, floorMaterial );
+				scene.add( floor );
+
+                var loader = new GLTFLoader();
+				var plane = new THREE.Object3D();
+				loader.load( './museu.glb', function ( gltf ) {
+                    //variaveis para os objetos vindos do modelo .glb
+                    var arte, texture, planeMaterial, parameters, arteInfo;
+                    // plano gerado aqui no JS mesmo, só pra mostrar que também dá pra criar isso por aqui.
+                    var artPlane, quadro;
+					gltf.scene.scale.multiplyScalar(10);
+					scene.add( gltf.scene );
+
+					arte = scene.getObjectByName( "arte1", true );
+					texture = new THREE.TextureLoader().load( './blusa.png' );
+					texture.center.set(.5, .5);
+					texture.rotation = THREE.MathUtils.degToRad(-90);
+					texture.flipY = false;
+					planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+					arte.material = planeMaterial;
+					arteInfo = {name: "Blusa", desc: "Desenho de observação olhando um comentarista de xadrez"};					
+					arte.userData = arteInfo;
+
+					arte = scene.getObjectByName( "arte2", true );
+					texture = new THREE.TextureLoader().load( './arte2.jpg' );
+					texture.center.set(.5, .5);
+					texture.rotation = THREE.MathUtils.degToRad(-90);
+					texture.flipY = false;
+					planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+					planeMaterial.side = THREE.DoubleSide;
+					arte.material = planeMaterial;
+					arteInfo = {name: "Betty", desc: "Desenho de observação - Novela Betty em NY"};					
+					arte.userData = arteInfo;
+
+
+					video = document.getElementById( 'videoTeste' );
+					video.addEventListener('play', function() {
+						this.currentTime = 3;
+					}, false);
+					arte = scene.getObjectByName( "arte3", true );
+					texture = new THREE.VideoTexture( video );
+					parameters = { color: 0xffffff, map: texture };
+					texture.center.set(.5, .5);
+					texture.rotation = THREE.MathUtils.degToRad(-90);
+					texture.flipY = false;
+					planeMaterial =  new THREE.MeshLambertMaterial( parameters );
+					arte.material = planeMaterial;
+					arteInfo = {name: "Video", desc: "Video teste", workType: tVideo};
+					arte.userData = arteInfo;
+
+					arte = scene.getObjectByName( "arte4", true );
+					texture = new THREE.TextureLoader().load( './peca.jpeg' );
+					texture.center.set(.5, .5);
+					texture.rotation = THREE.MathUtils.degToRad(-90);
+					texture.flipY = false;
+					planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+                    planeMaterial.side = THREE.DoubleSide;
+                    arte.material = planeMaterial;
+					arteInfo = {name: "Peça", desc: "Dama de xadrez"};
+					arte.userData = arteInfo;
+
+                    
+					artPlane = new THREE.PlaneGeometry( 2, 10);
+					texture = new THREE.TextureLoader().load( './peca.jpeg' );
+					planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+					planeMaterial.side = THREE.DoubleSide;
+					artPlane.material = planeMaterial;
+					quadro = new THREE.Mesh( artPlane, planeMaterial );
+					scene.add(quadro);
+					quadro.position.set(arte.position.x * 10, arte.position.y * 10, arte.position.z * 10 - 10);
+					quadro.rotateY(THREE.MathUtils.degToRad(90));
+					arteInfo = {name: "Peça2", desc: "Dama de xadrez 2"};
+					quadro.userData = arteInfo;
+
+
+				}, undefined, function ( error ) {
+
+					console.error( error );
+
+				} );
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'click', onDocumenClick, false );
+            }
+/*            
+			function createHUDSprites( texture ) {
+
+				const material = new THREE.SpriteMaterial( { map: texture } );
+
+				const width = material.map.image.width;
+				const height = material.map.image.height;
+
+				spriteC = new THREE.Sprite( material );
+				spriteC.center.set( 0.5, 0.5 );
+				spriteC.scale.set( width, height, 0.5 );
+				sceneOrtho.add( spriteC );
+
+				updateHUDSprites();
+
+			}
+
+			function updateHUDSprites() {
+
+				const width = window.innerWidth / 2;
+				const height = window.innerHeight / 2;
+				spriteC.position.set( 0, 0, 1 ); // center
+
+			}
+*/
+
+			function onWindowResize() {
+
+				const width = window.innerWidth;
+				const height = window.innerHeight;
+
+				camera.aspect = width / height;
+				camera.updateProjectionMatrix();
+
+				cameraOrtho.left = - width / 2;
+				cameraOrtho.right = width / 2;
+				cameraOrtho.top = height / 2;
+				cameraOrtho.bottom = - height / 2;
+				cameraOrtho.updateProjectionMatrix();
+
+				//updateHUDSprites();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				event.preventDefault();
+
+				mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+				mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+			}
+
+			function onDocumenClick( event ) {
+				if (event.srcElement.id != 'controle1') {
+					if (outlinePass.selectedObjects[0].userData.workType == tVideo) {
+						video = document.getElementById( 'videoTeste' );
+						if (video.paused) {
+							video.play();
+						} else {
+							video.pause();
+						}
+					} else {
+						showInfo = !showInfo;
+						if (showInfo){
+							document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
+							document.getElementById("workDesc").innerText = outlinePass.selectedObjects[0].userData.desc;
+
+							document.getElementById("workInfo").style.visibility = "visible"; 
+						} else {
+							document.getElementById("workInfo").style.visibility = "hidden"; 
+						}
+					}
+				}
+			}
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				const time = performance.now();
+
+				if ( controls.isLocked === true ) {
+
+					raycaster.ray.origin.copy( controls.getObject().position );
+					raycaster.ray.origin.y -= 10;
+
+					const intersections = raycaster.intersectObjects( objects, true );
+
+					const onObject = intersections.length > 0;
+
+					const delta = ( time - prevTime ) / 1000;
+
+					velocity.x -= velocity.x * 10.0 * delta;
+					velocity.z -= velocity.z * 10.0 * delta;
+
+					velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+					direction.z = Number( moveForward ) - Number( moveBackward );
+					direction.x = Number( moveRight ) - Number( moveLeft );
+					direction.normalize(); // this ensures consistent movements in all directions
+
+					if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+					if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+
+					if ( onObject === true ) {
+
+						velocity.y = Math.max( 0, velocity.y );
+						canJump = true;
+
+					}
+
+					controls.moveRight( - velocity.x * delta );
+					controls.moveForward( - velocity.z * delta );
+
+					controls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+					if ( controls.getObject().position.y < 10 ) {
+
+						velocity.y = 0;
+						controls.getObject().position.y = 10;
+
+						canJump = true;
+
+					}
+
+				}
+
+				prevTime = time;
+
+				var centerRaycaster = {x: 0, y: 0};
+				raycaster2.setFromCamera( centerRaycaster, camera );
+				var intersects = raycaster2.intersectObjects( scene.children, true );
+				if ( intersects.length > 0 ) {
+
+					const selectedObject = intersects[ 0 ].object;
+					addSelectedObject( selectedObject );
+					outlinePass.selectedObjects = selectedObjects;
+
+				}
+				renderer.clear();
+				renderer.render( scene, camera );
+				composer.render();
+				renderer.clearDepth();
+				renderer.render( sceneOrtho, cameraOrtho );
+			}
+
+			function addSelectedObject( object ) {
+
+				selectedObjects = [];
+				selectedObjects.push( object );
+
+			}
+
+		</script>
+	</body>
+</html>
