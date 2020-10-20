@@ -421,24 +421,25 @@
             }
 
             function onDocumenClick( event ) {
-                if (event.srcElement.id != 'controle1') {
-                    if (outlinePass.selectedObjects[0].userData.workType == tVideo) {
-                        video = document.getElementById( 'videoTeste' );
-                        if (video.paused) {
-                            video.play();
-                        } else {
-                            video.pause();
-                        }
-                    } else if (outlinePass.selectedObjects[0].userData.workType == tImage) {
-                        showInfo = !showInfo;
-                        if (showInfo){
+                if (outlinePass.selectedObjects[0].userData.workType == tVideo) {
+                    video = document.getElementById( 'videoTeste' );
+                    if (video.paused) {
+                        video.play();
+                    } else {
+                        video.pause();
+                    }
+                } else {
+                    if (showInfo) {
+                        if (outlinePass.selectedObjects[0].userData.workType == tImage) {
                             document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
                             document.getElementById("workDesc").innerText = outlinePass.selectedObjects[0].userData.desc;
 
                             document.getElementById("workInfo").style.visibility = "visible"; 
-                        } else {
-                            document.getElementById("workInfo").style.visibility = "hidden"; 
+                            showInfo = false;
                         }
+                    } else {
+                        document.getElementById("workInfo").style.visibility = "hidden";
+                        showInfo = true;
                     }
                 }
             }
