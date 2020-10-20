@@ -299,7 +299,7 @@
                     texture.flipY = false;
                     planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
                     arte.material = planeMaterial;
-                    arteInfo = {name: "Blusa", desc: "Desenho de observação olhando um comentarista de xadrez"};					
+                    arteInfo = {name: "Blusa", desc: "Desenho de observação olhando um comentarista de xadrez", workType: tImage};
                     arte.userData = arteInfo;
 
                     arte = scene.getObjectByName( "arte2", true );
@@ -310,7 +310,7 @@
                     planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
                     planeMaterial.side = THREE.DoubleSide;
                     arte.material = planeMaterial;
-                    arteInfo = {name: "Betty", desc: "Desenho de observação - Novela Betty em NY"};					
+                    arteInfo = {name: "Betty", desc: "Desenho de observação - Novela Betty em NY", workType: tImage};
                     arte.userData = arteInfo;
 
 
@@ -337,7 +337,7 @@
                     planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
                     planeMaterial.side = THREE.DoubleSide;
                     arte.material = planeMaterial;
-                    arteInfo = {name: "Peça", desc: "Dama de xadrez"};
+                    arteInfo = {name: "Peça", desc: "Dama de xadrez", workType: tImage};
                     arte.userData = arteInfo;
 
                     
@@ -350,7 +350,7 @@
                     scene.add(quadro);
                     quadro.position.set(arte.position.x * 10, arte.position.y * 10, arte.position.z * 10 - 10);
                     quadro.rotateY(THREE.MathUtils.degToRad(90));
-                    arteInfo = {name: "Peça2", desc: "Dama de xadrez 2"};
+                    arteInfo = {name: "Peça2", desc: "Dama de xadrez 2", workType: tImage};
                     quadro.userData = arteInfo;
 
 
@@ -429,7 +429,7 @@
                         } else {
                             video.pause();
                         }
-                    } else {
+                    } else if (outlinePass.selectedObjects[0].userData.workType == tImage) {
                         showInfo = !showInfo;
                         if (showInfo){
                             document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
