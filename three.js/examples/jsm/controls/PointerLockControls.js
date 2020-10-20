@@ -42,26 +42,6 @@ var PointerLockControls = function ( camera, domElement ) {
 	var lastxpos = 0;
 	var lastypos = 0;
 
-		function onTouchMove( e ) {
-
-		};
-		function onTouchEnd( e ) {
-			//e.preventDefault(); // prevent scrolling
-			//e.stopPropagation();
-		  	clientY = e.touches[0].clientY;
-		  	clientX = e.touches[0].clientX;
-		  	xfromtouch = clientX-ww;
-			yfromtouch = clientY-(h-100) ;
-			euler.setFromQuaternion( camera.quaternion );
-			euler.y = xfromtouch * 0.005;
-			euler.x = yfromtouch * 0.005;
-			euler.x = Math.max( - PI_2, Math.min( PI_2_mobile, euler.x ) );
-			euler.y = Math.max( - PI_2y, Math.min( PI_2y, euler.y ) );
-			camera.quaternion.setFromEuler( euler );
-			scope.dispatchEvent( changeEvent );
-			console.log(yfromtouch);
-		};
-
 	function onMouseMove( event ) {
 
 		if ( scope.isLocked === false ) return;
@@ -109,8 +89,6 @@ var PointerLockControls = function ( camera, domElement ) {
 	this.connect = function () {
 
 		scope.domElement.ownerDocument.addEventListener( 'mousemove', onMouseMove, false );
-		//scope.domElement.ownerDocument.addEventListener( 'touchstart', onTouch, false );
-		scope.domElement.ownerDocument.addEventListener( 'touchend', onTouchEnd, false);
 		scope.domElement.ownerDocument.addEventListener( 'pointerlockchange', onPointerlockChange, false );
 		scope.domElement.ownerDocument.addEventListener( 'pointerlockerror', onPointerlockError, false );
 
@@ -119,8 +97,6 @@ var PointerLockControls = function ( camera, domElement ) {
 	this.disconnect = function () {
 
 		scope.domElement.ownerDocument.removeEventListener( 'mousemove', onMouseMove, false );
-		scope.domElement.ownerDocument.removeEventListener( 'touchend', onTouchEnd, false );
-		//scope.domElement.ownerDocument.removeEventListener( 'touchend', onTouchEnd, false);
 		scope.domElement.ownerDocument.removeEventListener( 'pointerlockchange', onPointerlockChange, false );
 		scope.domElement.ownerDocument.removeEventListener( 'pointerlockerror', onPointerlockError, false );
 
