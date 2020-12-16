@@ -61,8 +61,11 @@
             </div>
 
         </div>
-        <video width="640" height="360" id="videoTeste" loop  playsinline style="display:none">
+        <video width="640" height="360" id="video01" loop  playsinline style="display:none">
             <source type="video/mp4" src="./video.mp4" />
+        </video>
+        <video width="640" height="360" id="video02" loop  playsinline style="display:none">
+            <source type="video/mp4" src="./video2.m4v" />
         </video>
         <div id="workInfo" style="position: absolute; width: 100%; text-align: center;-ms-transform: translateY(-50%);transform: translateY(-50%);top: 50%;visibility: hidden;">
             Nome:
@@ -288,6 +291,10 @@
                 var loader = new GLTFLoader();
                 var plane = new THREE.Object3D();
                 loader.load( './museu.glb', function ( gltf ) {
+                    //No arquivo do blender há alguns planos (são os retângulos onde vemos as imagens na parede), e aqui eu só coloco
+                    //as imagens como textura para esses planos.
+                    //Em algumas outras obras o plano é gerado aqui mesmo no js, é mais difícil calcular a posição mas facilita a edição.
+
                     //variaveis para os objetos vindos do modelo .glb
                     var arte, texture, planeMaterial, parameters, arteInfo;
                     // plano gerado aqui no JS mesmo, só pra mostrar que também dá pra criar isso por aqui.
@@ -317,7 +324,7 @@
                     arte.userData = arteInfo;
 
 
-                    video = document.getElementById( 'videoTeste' );
+                    video = document.getElementById( 'video01' );
                     video.addEventListener('play', function() {
                         this.currentTime = 3;
                     }, false);
@@ -329,7 +336,9 @@
                     texture.flipY = false;
                     planeMaterial =  new THREE.MeshLambertMaterial( parameters );
                     arte.material = planeMaterial;
-                    arteInfo = {name: "Video", desc: "Video teste", workType: tVideo};
+                    //aqui "videoId" é o id do elemento HTML "video" em que esse vídeo está, vai ser usado
+                    //pra tocar/pausar o vídeo correspondente.
+                    arteInfo = {name: "Video", desc: "Video teste", workType: tVideo, videoId: "video01"};
                     arte.userData = arteInfo;
 
                     arte = scene.getObjectByName( "arte4", true );
@@ -344,7 +353,7 @@
                     arte.userData = arteInfo;
 
                     
-                    artPlane = new THREE.PlaneGeometry( 2, 10);
+                    artPlane = new THREE.PlaneGeometry( 5, 10);
                     texture = new THREE.TextureLoader().load( './peca.jpeg' );
                     planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
                     planeMaterial.side = THREE.DoubleSide;
@@ -356,6 +365,23 @@
                     arteInfo = {name: "Peça2", desc: "Dama de xadrez 2", workType: tImage};
                     quadro.userData = arteInfo;
 
+                    video = document.getElementById( 'video02' );
+                    video.addEventListener('play', function() {
+                        this.currentTime = 3;
+                    }, false);                    
+                    artPlane = new THREE.PlaneGeometry(10, 6);
+                    texture = new THREE.VideoTexture( video );
+                    planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+                    planeMaterial.side = THREE.DoubleSide;
+                    artPlane.material = planeMaterial;
+                    quadro = new THREE.Mesh( artPlane, planeMaterial );
+                    quadro.rotation.y = Math.PI / 2;
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10, arte.position.y * 10 - 1, arte.position.z * 10 - 20);
+                    //aqui "videoId" é o id do elemento HTML "video" em que esse vídeo está, vai ser usado
+                    //pra tocar/pausar o vídeo correspondente.
+                    arteInfo = {name: "Video", desc: "Video teste", workType: tVideo, videoId: "video02"};
+                    quadro.userData = arteInfo;
 
                 }, undefined, function ( error ) {
 
@@ -425,7 +451,7 @@
 
             function onDocumenClick( event ) {
                 if (outlinePass.selectedObjects[0].userData.workType == tVideo) {
-                    video = document.getElementById( 'videoTeste' );
+                    video = document.getElementById(outlinePass.selectedObjects[0].userData.videoId);
                     if (video.paused) {
                         video.play();
                     } else {
