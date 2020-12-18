@@ -43,6 +43,21 @@
 
                 cursor: pointer;
             }
+            #workInfo {
+                position: absolute;
+                text-align: center;
+                bottom:0;
+                float:right;
+                visibility: hidden;
+                background: rgba(255, 255, 255, 0.7);
+                margin: 15px;
+                color:#000000;
+                padding: 15px;
+                width: 20%;
+            }
+            #workInfo a {
+                color: #330033;
+            }
         </style>
     </head>
     <body>
@@ -62,17 +77,18 @@
 
         </div>
         <video width="640" height="360" id="video01" loop  playsinline style="display:none">
-            <source type="video/mp4" src="./video.mp4" />
+            <source type="video/mp4" src="./artes/video.mp4" />
         </video>
         <video width="640" height="360" id="video02" loop  playsinline style="display:none">
-            <source type="video/mp4" src="./video2.m4v" />
+            <source type="video/mp4" src="./artes/video2.m4v" />
         </video>
-        <div id="workInfo" style="position: absolute; width: 100%; text-align: center;-ms-transform: translateY(-50%);transform: translateY(-50%);top: 50%;visibility: hidden;">
-            Nome:
-            <div id="workName"></div><br/>
-            Descrição:
-            <div id="workDesc"></div><br/>
-            <div id="workYoutube"></div>			
+        <video width="760" height="360" id="video03" loop  playsinline style="display:none">
+            <source type="video/mp4" src="./artes/video3.m4v" />
+        </video>
+        <div id="workInfo">
+            <b>Nome:</b> <span id="workName"></span><br/>
+            <b>Descrição:</b> <span id="workDesc"></span><br/>
+            <span id="workYoutube"></span>			
         </div>
 
         <script type="module">
@@ -302,8 +318,9 @@
                     gltf.scene.scale.multiplyScalar(10);
                     scene.add( gltf.scene );
 
+                    //PAREDE 1
                     arte = scene.getObjectByName( "arte1", true );
-                    texture = new THREE.TextureLoader().load( './blusa.jpg' );
+                    texture = new THREE.TextureLoader().load( './artes/blusa.jpg' );
                     texture.center.set(.5, .5);
                     texture.rotation = THREE.MathUtils.degToRad(-90);
                     texture.flipY = false;
@@ -313,7 +330,7 @@
                     arte.userData = arteInfo;
 
                     arte = scene.getObjectByName( "arte2", true );
-                    texture = new THREE.TextureLoader().load( './arte2.jpg' );
+                    texture = new THREE.TextureLoader().load( './artes/arte2.jpg' );
                     texture.center.set(.5, .5);
                     texture.rotation = THREE.MathUtils.degToRad(-90);
                     texture.flipY = false;
@@ -326,7 +343,7 @@
 
                     video = document.getElementById( 'video01' );
                     video.addEventListener('play', function() {
-                        this.currentTime = 3;
+                        this.currentTime = 0;
                     }, false);
                     arte = scene.getObjectByName( "arte3", true );
                     texture = new THREE.VideoTexture( video );
@@ -342,7 +359,7 @@
                     arte.userData = arteInfo;
 
                     arte = scene.getObjectByName( "arte4", true );
-                    texture = new THREE.TextureLoader().load( './peca.jpeg' );
+                    texture = new THREE.TextureLoader().load( './artes/peca.jpeg' );
                     texture.center.set(.5, .5);
                     texture.rotation = THREE.MathUtils.degToRad(-90);
                     texture.flipY = false;
@@ -352,35 +369,86 @@
                     arteInfo = {name: "Peça", desc: "Dama de xadrez", workType: tImage};
                     arte.userData = arteInfo;
 
-                    
-                    artPlane = new THREE.PlaneGeometry( 5, 10);
-                    texture = new THREE.TextureLoader().load( './peca.jpeg' );
-                    planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
-                    planeMaterial.side = THREE.DoubleSide;
-                    artPlane.material = planeMaterial;
-                    quadro = new THREE.Mesh( artPlane, planeMaterial );
+                    //esse é o primeiro dos planos criados aqui pelo JS ao invés de usar os do modelo do blender.
+                    quadro = criarQuadro(5,10,'./artes/peca.jpeg', Math.PI / 2);
                     scene.add(quadro);
                     quadro.position.set(arte.position.x * 10, arte.position.y * 10, arte.position.z * 10 - 10);
-                    quadro.rotateY(THREE.MathUtils.degToRad(90));
                     arteInfo = {name: "Peça2", desc: "Dama de xadrez 2", workType: tImage};
                     quadro.userData = arteInfo;
 
                     video = document.getElementById( 'video02' );
                     video.addEventListener('play', function() {
-                        this.currentTime = 3;
-                    }, false);                    
-                    artPlane = new THREE.PlaneGeometry(10, 6);
-                    texture = new THREE.VideoTexture( video );
-                    planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
-                    planeMaterial.side = THREE.DoubleSide;
-                    artPlane.material = planeMaterial;
-                    quadro = new THREE.Mesh( artPlane, planeMaterial );
-                    quadro.rotation.y = Math.PI / 2;
+                        this.currentTime = 0;
+                    }, false);              
+                    quadro = criarQuadro(20,11, video, Math.PI / 2);
                     scene.add(quadro);
-                    quadro.position.set(arte.position.x * 10, arte.position.y * 10 - 1, arte.position.z * 10 - 20);
+                    quadro.position.set(arte.position.x * 10, arte.position.y * 10 - 1, arte.position.z * 10 - 30);
                     //aqui "videoId" é o id do elemento HTML "video" em que esse vídeo está, vai ser usado
                     //pra tocar/pausar o vídeo correspondente.
-                    arteInfo = {name: "Video", desc: "Video teste", workType: tVideo, videoId: "video02"};
+                    arteInfo = {name: "Autorretrato", desc: "Trabalho de mídia", workType: tVideo, videoId: "video02"};
+                    quadro.userData = arteInfo;
+
+                    //PAREDE 2                    
+                    video = document.getElementById( 'video03' );
+                    video.addEventListener('play', function() {
+                        this.currentTime = 0;
+                    }, false);
+                    quadro = criarQuadro(20,9.5, video, 0);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 30, arte.position.y * 10 - 1.5, arte.position.z * 10 - 58);
+                    arteInfo = {name: "Shelby Cobra", desc: "Desenho de observação - Shelby Cobra " +
+                            "Referência: https://en.wikipedia.org/wiki/AC_Cobra#/media/File:Shelby_AC_427_Cobra_vl_blue.jpg", workType: tVideo, videoId: "video03"};
+                    quadro.userData = arteInfo;
+
+                    quadro = criarQuadro(20,11,'./artes/maquina-de-costura.jpeg', 0);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 65, arte.position.y * 10 - 1.5, arte.position.z * 10 - 58);
+                    //quadro.rotateY(THREE.MathUtils.degToRad(90));
+                    arteInfo = {name: "Máquina de costura", desc: "Máquina de costura desenhada a partir de observação direta", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    quadro = criarQuadro(11,16,'./artes/desenho-museu-afro2.jpeg', 0);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 95, arte.position.y * 10 - 1.5, arte.position.z * 10 - 58);
+                    arteInfo = {name: "Iansã", desc: "Desenho feito com base em fotos de uma obra presente no Museu Afro Brasil", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    //PAREDE 3
+                    quadro = criarQuadro(20,11,'./artes/maos.jpeg', -Math.PI/2);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 127, arte.position.y * 10 - 1.5, arte.position.z * 10 - 25);
+                    arteInfo = {name: "Mãos", desc: "Estudo de mãos, olhando as minhas próprias para desenhar", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    quadro = criarQuadro(10,14,'./artes/ar2.jpeg', -Math.PI/2);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 127, arte.position.y * 10 - 1.5, arte.position.z * 10 + 5);
+                    arteInfo = {name: "Autorretrato", desc: "Autorretrato feito como demonstração em um vídeo de desenho.", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    quadro = criarQuadro(15,10,'./artes/moca-debaixo-de-arvore.jpeg', -Math.PI/2);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 127, arte.position.y * 10 - 1.5, arte.position.z * 10 + 32);
+                    arteInfo = {name: "Moça debaixo de árvore", desc: "Desenho feito com uma imagem do Google StreetView como referência", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    //PAREDE 4
+                    quadro = criarQuadro(12,16,'./artes/perdida.jpeg', Math.PI);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 95, arte.position.y * 10 - 1.5, arte.position.z * 180 - 2);
+                    arteInfo = {name: "Perdida", desc: "Estudo rápido de uma cena da série 'Padre Brown'", workType: tImage};
+                    quadro.userData = arteInfo;
+
+                    quadro = criarQuadro(20,11,'./artes/danca.jpeg', Math.PI);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 62, arte.position.y * 10 - 1.5, arte.position.z * 180 - 2);
+                    arteInfo = {name: "Dança", desc: "Desenhos feitos usando vídeos de professores de dança como referência.", workType: tImage};
+                    quadro.userData = arteInfo;
+                    
+                    quadro = criarQuadro(20,12,'./artes/parque_da_agua_branca-marco.jpg', Math.PI);
+                    scene.add(quadro);
+                    quadro.position.set(arte.position.x * 10 + 30, arte.position.y * 10 - 1.5, arte.position.z * 180 - 2);
+                    arteInfo = {name: "Parque da Àgua Branca", desc: "Desenho de observação feito no local em Março de 2020", workType: tImage};
                     quadro.userData = arteInfo;
 
                 }, undefined, function ( error ) {
@@ -394,6 +462,23 @@
                 document.addEventListener( 'mousemove', onDocumentMouseMove, false );
                 document.addEventListener( 'click', onDocumenClick, false );
             }
+
+            function criarQuadro(largura, altura, imagem, rotacao) {
+                var artPlane, texture, planeMaterial, quadro;
+                artPlane = new THREE.PlaneGeometry( largura, altura);
+                if (imagem instanceof HTMLVideoElement) {
+                    texture = new THREE.VideoTexture( video );
+                } else {
+                    texture = new THREE.TextureLoader().load(imagem);
+                }
+                planeMaterial = new THREE.MeshLambertMaterial( { map: texture } );
+                planeMaterial.side = THREE.DoubleSide;
+                artPlane.material = planeMaterial;
+                quadro = new THREE.Mesh( artPlane, planeMaterial );
+                quadro.rotation.y = rotacao;
+                return quadro;
+            } 
+
 /*            
             function createHUDSprites( texture ) {
 
@@ -449,27 +534,34 @@
 
             }
 
+            function troggleInfo() {
+                if (showInfo) {
+                        document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
+                        document.getElementById("workDesc").innerText = outlinePass.selectedObjects[0].userData.desc;
+
+                        document.getElementById("workInfo").style.visibility = "visible"; 
+                        showInfo = false;
+                    } else {
+                        document.getElementById("workInfo").style.visibility = "hidden";
+                        showInfo = true;
+                }
+            }
             function onDocumenClick( event ) {
                 if (outlinePass.selectedObjects[0].userData.workType == tVideo) {
                     video = document.getElementById(outlinePass.selectedObjects[0].userData.videoId);
                     if (video.paused) {
                         video.play();
+                        document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
+                        document.getElementById("workDesc").innerText = outlinePass.selectedObjects[0].userData.desc;
+                        document.getElementById("workInfo").style.visibility = "visible"; 
+                        showInfo = false;
                     } else {
                         video.pause();
-                    }
-                } else {
-                    if (showInfo) {
-                        if (outlinePass.selectedObjects[0].userData.workType == tImage) {
-                            document.getElementById("workName").innerText = outlinePass.selectedObjects[0].userData.name;
-                            document.getElementById("workDesc").innerText = outlinePass.selectedObjects[0].userData.desc;
-
-                            document.getElementById("workInfo").style.visibility = "visible"; 
-                            showInfo = false;
-                        }
-                    } else {
                         document.getElementById("workInfo").style.visibility = "hidden";
                         showInfo = true;
                     }
+                } else if (outlinePass.selectedObjects[0].userData.workType == tImage) {
+                    troggleInfo();
                 }
             }
 
